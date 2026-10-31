@@ -1,0 +1,411 @@
+{
+ "build_spec": {
+  "meta": {
+   "name": "hexbot",
+   "source_views": [
+    "front",
+    "back",
+    "side_left",
+    "side_right"
+   ],
+   "unit": "meters",
+   "origin": "ground plane at z=0, x/y centered on body axis",
+   "forward": "+Y",
+   "up": "+Z",
+   "right": "+X",
+   "total_height": 1.8
+  },
+  "proportions": {
+   "head_height": 0.3,
+   "shoulder_width": 0.45,
+   "torso_height": 0.6,
+   "leg_length": 0.9,
+   "upper_arm": 0.3,
+   "forearm": 0.26
+  },
+  "parts": [
+   {
+    "id": "torso",
+    "bounding_box": {
+     "size": [
+      0.42,
+      0.24,
+      0.6
+     ],
+     "center": [
+      0,
+      0,
+      1.2
+     ]
+    },
+    "primitives": [
+     {
+      "type": "cube",
+      "scale": [
+       0.42,
+       0.24,
+       0.6
+      ],
+      "loc": [
+       0,
+       0,
+       1.2
+      ],
+      "bevel": 0.03
+     },
+     {
+      "type": "cube",
+      "scale": [
+       0.26,
+       0.02,
+       0.3
+      ],
+      "loc": [
+       0,
+       -0.13,
+       1.25
+      ],
+      "bevel": 0.02,
+      "material": "dark_gray"
+     }
+    ],
+    "material": "shell"
+   },
+   {
+    "id": "head",
+    "parent": "torso",
+    "bounding_box": {
+     "size": [
+      0.26,
+      0.26,
+      0.3
+     ],
+     "center": [
+      0,
+      0,
+      1.65
+     ]
+    },
+    "primitives": [
+     {
+      "type": "cube",
+      "scale": [
+       0.24,
+       0.24,
+       0.28
+      ],
+      "loc": [
+       0,
+       0,
+       1.65
+      ],
+      "bevel": 0.04
+     },
+     {
+      "type": "cylinder",
+      "radius": 0.18,
+      "depth": 0.05,
+      "vertices": 6,
+      "loc": [
+       0,
+       0,
+       1.65
+      ],
+      "rot": [
+       90,
+       0,
+       0
+      ],
+      "material": "dark_gray"
+     },
+     {
+      "type": "uv_sphere",
+      "scale": [
+       0.07,
+       0.03,
+       0.07
+      ],
+      "loc": [
+       0,
+       -0.13,
+       1.66
+      ],
+      "material": "eye_blue"
+     }
+    ],
+    "material": "shell"
+   },
+   {
+    "id": "arm_L",
+    "parent": "torso",
+    "primitives": [
+     {
+      "type": "cube",
+      "scale": [
+       0.1,
+       0.1,
+       0.3
+      ],
+      "loc": [
+       -0.26,
+       0,
+       1.35
+      ],
+      "bevel": 0.02
+     },
+     {
+      "type": "cube",
+      "scale": [
+       0.09,
+       0.09,
+       0.26
+      ],
+      "loc": [
+       -0.26,
+       0,
+       1.0
+      ],
+      "bevel": 0.02
+     },
+     {
+      "type": "cube",
+      "scale": [
+       0.12,
+       0.1,
+       0.12
+      ],
+      "loc": [
+       -0.26,
+       0,
+       0.83
+      ],
+      "bevel": 0.02,
+      "material": "black"
+     }
+    ],
+    "material": "shell"
+   },
+   {
+    "id": "arm_R",
+    "parent": "torso",
+    "primitives": [
+     {
+      "type": "cube",
+      "scale": [
+       0.1,
+       0.1,
+       0.3
+      ],
+      "loc": [
+       0.26,
+       0,
+       1.35
+      ],
+      "bevel": 0.02
+     },
+     {
+      "type": "cube",
+      "scale": [
+       0.09,
+       0.09,
+       0.26
+      ],
+      "loc": [
+       0.26,
+       0,
+       1.0
+      ],
+      "bevel": 0.02
+     },
+     {
+      "type": "cube",
+      "scale": [
+       0.12,
+       0.1,
+       0.12
+      ],
+      "loc": [
+       0.26,
+       0,
+       0.83
+      ],
+      "bevel": 0.02,
+      "material": "black"
+     }
+    ],
+    "material": "shell"
+   },
+   {
+    "id": "leg_L",
+    "parent": "torso",
+    "primitives": [
+     {
+      "type": "cube",
+      "scale": [
+       0.13,
+       0.13,
+       0.45
+      ],
+      "loc": [
+       -0.11,
+       0,
+       0.68
+      ],
+      "bevel": 0.02
+     },
+     {
+      "type": "cube",
+      "scale": [
+       0.11,
+       0.11,
+       0.43
+      ],
+      "loc": [
+       -0.11,
+       0,
+       0.23
+      ],
+      "bevel": 0.02
+     },
+     {
+      "type": "cube",
+      "scale": [
+       0.16,
+       0.22,
+       0.07
+      ],
+      "loc": [
+       -0.11,
+       -0.03,
+       0.035
+      ],
+      "bevel": 0.02,
+      "material": "black"
+     }
+    ],
+    "material": "shell"
+   },
+   {
+    "id": "leg_R",
+    "parent": "torso",
+    "primitives": [
+     {
+      "type": "cube",
+      "scale": [
+       0.13,
+       0.13,
+       0.45
+      ],
+      "loc": [
+       0.11,
+       0,
+       0.68
+      ],
+      "bevel": 0.02
+     },
+     {
+      "type": "cube",
+      "scale": [
+       0.11,
+       0.11,
+       0.43
+      ],
+      "loc": [
+       0.11,
+       0,
+       0.23
+      ],
+      "bevel": 0.02
+     },
+     {
+      "type": "cube",
+      "scale": [
+       0.16,
+       0.22,
+       0.07
+      ],
+      "loc": [
+       0.11,
+       -0.03,
+       0.035
+      ],
+      "bevel": 0.02,
+      "material": "black"
+     }
+    ],
+    "material": "shell"
+   }
+  ],
+  "materials": {
+   "shell": {
+    "base_color": [
+     0.82,
+     0.84,
+     0.87
+    ],
+    "roughness": 0.4,
+    "metallic": 0.15
+   },
+   "dark_gray": {
+    "base_color": [
+     0.25,
+     0.26,
+     0.28
+    ],
+    "roughness": 0.5,
+    "metallic": 0.3
+   },
+   "black": {
+    "base_color": [
+     0.05,
+     0.05,
+     0.06
+    ],
+    "roughness": 0.6,
+    "metallic": 0.2
+   },
+   "eye_blue": {
+    "base_color": [
+     0.1,
+     0.5,
+     1.0
+    ],
+    "emission": [
+     0.2,
+     0.7,
+     1.0
+    ],
+    "emission_strength": 4.0,
+    "roughness": 0.2
+   }
+  },
+  "build_order": [
+   "torso",
+   "head",
+   "arm_L",
+   "arm_R",
+   "leg_L",
+   "leg_R"
+  ],
+  "verification": {
+   "render_views": {
+    "front": [
+     90,
+     0,
+     0
+    ],
+    "back": [
+     90,
+     0,
+     180
+    ],
+    "side": [
+     90,
+     0,
+     -90
+    ]
+   },
+   "target_iou": 0.8
+  }
+ }
+}

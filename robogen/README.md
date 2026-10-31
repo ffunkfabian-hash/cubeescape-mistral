@@ -12,6 +12,8 @@ Silhouetten per IoU mit den Referenzbildern (Ziel: > 0,8).
 | `build_spec.yaml` | Spezifikation „hexbot": Proportionen (als Bruchteile der Gesamthöhe), Teile-Hierarchie, Primitive mit Maßen, Materialien |
 | `generate.py` | Baut das Modell in Blender: `blender -b -P generate.py -- build_spec.yaml` |
 | `verify.py` | Rendert Front/Rück/Seite als Ortho-Silhouetten und gibt IoU gegen Referenzen aus |
+| `web/index.html` | three.js-Einzelteilansicht: Modell exakt aus der Spec gebaut, Explosions-Slider, Einzelteil-Isolation, Front/Rück/Seite/Drauf |
+| `web/spec.json` | aus `build_spec.yaml` generierte JSON-Version für die Webanwendung |
 
 ## Ablauf
 
@@ -23,6 +25,7 @@ Silhouetten per IoU mit den Referenzbildern (Ziel: > 0,8).
 
 - Blender 4.x (headless: `blender -b`)
 - Python-Zusatzpakete nur für `verify.py`: `pip install pyyaml numpy pillow`
+- Webanwendung: beliebiger statischer Server, z. B. `python3 -m http.server` in `robogen/web/`, dann `http://localhost:8000`
 
 ## Agenten-Prompt-Template (neue Figur aus Referenzbildern)
 
