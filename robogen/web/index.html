@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>robogen – Einzelteil-Ansicht</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #14161a; color: #e8eaed; display: flex; height: 100vh; }
+  #view { flex: 1; }
+  #panel { width: 240px; padding: 12px; background: #1d2026; overflow-y: auto; }
+  #panel h1 { font-size: 16px; margin: 0 0 12px; }
+  .part, #views button, #models button { display: block; width: 100%; margin: 4px 0; padding: 8px; background: #2a2e36; color: #e8eaed;
+          border: 1px solid #3a3f48; border-radius: 6px; cursor: pointer; text-align: left; }
+  #views button, #models button { display: inline-block; width: auto; }
+  .active { background: #2f5d8a !important; border-color: #5b9bd5 !important; }
+  .row { margin: 14px 0; }
+  .row label { font-size: 13px; }
+  input[type=range] { width: 100%; }
+</style>
+</head>
+<body>
+<div id="view"></div>
+<div id="panel">
+  <h1>robogen</h1>
+  <div class="row">
+    <label>Modell:</label><br>
+    <div id="models">
+      <button data-m="hexbot">hexbot</button>
+      <button data-m="bulkybot" class="active">bulkybot</button>
+    </div>
+  </div>
+  <div class="row">
+    <label>Explosionsansicht: <span id="expVal">0</span>%</label>
+    <input id="explode" type="range" min="0" max="100" value="0">
+  </div>
+  <div class="row">
+    <label>Ansicht:</label><br>
+    <div id="views">
+      <button data-v="iso" class="active">3D</button>
+      <button data-v="front">Front</button>
+      <button data-v="back">Rück</button>
+      <button data-v="side">Seite</button>
+      <button data-v="top">Drauf</button>
+    </div>
+  </div>
+  <div class="row">
+    <label>Einzelteil:</label>
+    <button class="part active" data-p="all">Alle Teile</button>
+    <div id="parts"></div>
+  </div>
+</div>
+<script type="importmap">
+{ "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const MODELS = { hexbot: 'spec.json', bulkybot: 'spec_bulky.json' };
+const container = document.getElementById('view');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(devicePixelRatio);
+renderer.setSize(container.clientWidth, container.clientHeight);
+container.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x14161a);
+const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.01, 100);
+camera.position.set(2.2, 1.6, 2.6);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0.95, 0);
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x223344, 1.1));
+const key = new THREE.DirectionalLight(0xffffff, 1.6);
+key.position.set(3, 5, 4);
+scene.add(key);
+const rim = new THREE.DirectionalLight(0x88bbff, 0.7);
+rim.position.set(-4, 2, -3);
+scene.add(rim);
+
+let mats = {};
+let root = null;
+let partGroups = {};
+let activePart = 'all';
+
+function makeMaterial(cfg) {
+  return new THREE.MeshStandardMaterial({
+    color: new THREE.Color(...cfg.base_color),
+    roughness: cfg.roughness ?? 0.5,
+    metalness: cfg.metallic ?? 0.0,
+    emissive: cfg.emission ? new THREE.Color(...cfg.emission) : new THREE.Color(0x000000),
+    emissiveIntensity: cfg.emission_strength ?? 0,
+  });
+}
+
+function addPrim(group, p) {
+  let geo;
+  if (p.type === 'cube') {
+    geo = new THREE.BoxGeometry(...p.scale);
+  } else if (p.type === 'uv_sphere') {
+    geo = new THREE.SphereGeometry(1, 24, 16);
+    geo.scale(...(p.scale || [p.radius, p.radius, p.radius]));
+  } else if (p.type === 'cylinder') {
+    geo = new THREE.CylinderGeometry(p.radius, p.radius, p.depth, p.vertices || 32);
+    const r = p.rot || [0, 0, 0];
+    geo.rotateX(THREE.MathUtils.degToRad(r[0]));
+    geo.rotateY(THREE.MathUtils.degToRad(r[1]));
+    geo.rotateZ(THREE.MathUtils.degToRad(r[2]));
+  }
+  const mesh = new THREE.Mesh(geo, mats[p.material] || Object.values(mats)[0]);
+  mesh.position.set(...p.loc);
+  group.add(mesh);
+}
+
+async function loadModel(name) {
+  const spec = (await (await fetch(MODELS[name])).json()).build_spec;
+  mats = {};
+  for (const [n, cfg] of Object.entries(spec.materials)) mats[n] = makeMaterial(cfg);
+  if (root) scene.remove(root);
+  root = new THREE.Group();
+  scene.add(root);
+  partGroups = {};
+  for (const part of spec.parts) {
+    const g = new THREE.Group();
+    g.name = part.id;
+    let center = part.bounding_box ? part.bounding_box.center : null;
+    if (!center) {
+      center = [0, 0, 0];
+      for (const p of part.primitives) for (let i = 0; i < 3; i++) center[i] += p.loc[i] / part.primitives.length;
+    }
+    g.position.set(...center);
+    for (const p of part.primitives) {
+      addPrim(g, { ...p, loc: p.loc.map((v, i) => v - center[i]) });
+    }
+    g.userData.center = new THREE.Vector3(...center);
+    root.add(g);
+    partGroups[part.id] = g;
+  }
+  const partsDiv = document.getElementById('parts');
+  partsDiv.innerHTML = '';
+  for (const part of spec.parts) {
+    const b = document.createElement('button');
+    b.className = 'part';
+    b.dataset.p = part.id;
+    b.textContent = part.id;
+    b.onclick = () => setPart(part.id);
+    partsDiv.appendChild(b);
+  }
+  setPart('all');
+  applyExplode();
+}
+
+function setPart(id) {
+  activePart = id;
+  document.querySelectorAll('.part').forEach(b => b.classList.toggle('active', b.dataset.p === id));
+  for (const [pid, g] of Object.entries(partGroups)) g.visible = (id === 'all' || id === pid);
+}
+
+const explodeSlider = document.getElementById('explode');
+function applyExplode() {
+  const t = explodeSlider.value / 100;
+  document.getElementById('expVal').textContent = explodeSlider.value;
+  for (const g of Object.values(partGroups)) {
+    const c = g.userData.center;
+    const dir = new THREE.Vector3(c.x, c.y - 0.95, c.z);
+    if (dir.lengthSq() < 1e-6) dir.set(0, 1, 0);
+    dir.normalize();
+    g.position.copy(c).add(dir.multiplyScalar(t * 0.55));
+  }
+}
+explodeSlider.oninput = applyExplode;
+
+const views = {
+  iso: [2.2, 1.6, 2.6], front: [0, 1.0, 3.2], back: [0, 1.0, -3.2],
+  side: [3.2, 1.0, 0], top: [0, 4.5, 0.01],
+};
+document.querySelectorAll('#views button').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('#views button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    camera.position.set(...views[b.dataset.v]);
+    controls.target.set(0, 0.95, 0);
+  };
+});
+document.querySelectorAll('#models button').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('#models button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    loadModel(b.dataset.m);
+  };
+});
+
+addEventListener('resize', () => {
+  camera.aspect = container.clientWidth / container.clientHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(container.clientWidth, container.clientHeight);
+});
+window.addEventListener('error', e => {
+  const d = document.createElement('div');
+  d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#a33;color:#fff;padding:8px;font:13px monospace;z-index:99';
+  d.textContent = 'Fehler: ' + e.message;
+  document.body.appendChild(d);
+});
+loadModel('bulkybot').catch(e => {
+  const d = document.createElement('div');
+  d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#a33;color:#fff;padding:8px;font:13px monospace;z-index:99';
+  d.textContent = 'Modell laden fehlgeschlagen: ' + e.message;
+  document.body.appendChild(d);
+});
+renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+</script>
+</body>
+</html>
