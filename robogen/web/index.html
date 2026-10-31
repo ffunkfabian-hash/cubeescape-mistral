@@ -9,20 +9,26 @@
   #view { flex: 1; }
   #panel { width: 240px; padding: 12px; background: #1d2026; overflow-y: auto; }
   #panel h1 { font-size: 16px; margin: 0 0 12px; }
-  .part { display: block; width: 100%; margin: 4px 0; padding: 8px; background: #2a2e36; color: #e8eaed;
+  .part, #views button, #models button { display: block; width: 100%; margin: 4px 0; padding: 8px; background: #2a2e36; color: #e8eaed;
           border: 1px solid #3a3f48; border-radius: 6px; cursor: pointer; text-align: left; }
-  .part.active { background: #2f5d8a; border-color: #5b9bd5; }
+  #views button, #models button { display: inline-block; width: auto; }
+  .active { background: #2f5d8a !important; border-color: #5b9bd5 !important; }
   .row { margin: 14px 0; }
   .row label { font-size: 13px; }
   input[type=range] { width: 100%; }
-  #views button { margin: 2px; padding: 6px 10px; background: #2a2e36; color: #e8eaed; border: 1px solid #3a3f48; border-radius: 6px; cursor: pointer; }
-  #views button.active { background: #2f5d8a; }
 </style>
 </head>
 <body>
 <div id="view"></div>
 <div id="panel">
-  <h1>robogen – hexbot</h1>
+  <h1>robogen</h1>
+  <div class="row">
+    <label>Modell:</label><br>
+    <div id="models">
+      <button data-m="hexbot">hexbot</button>
+      <button data-m="bulkybot" class="active">bulkybot</button>
+    </div>
+  </div>
   <div class="row">
     <label>Explosionsansicht: <span id="expVal">0</span>%</label>
     <input id="explode" type="range" min="0" max="100" value="0">
@@ -53,7 +59,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const spec = (await (await fetch('spec.json')).json()).build_spec;
+const MODELS = { hexbot: 'spec.json', bulkybot: 'spec_bulky.json' };
 const container = document.getElementById('view');
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(devicePixelRatio);
@@ -75,6 +81,11 @@ const rim = new THREE.DirectionalLight(0x88bbff, 0.7);
 rim.position.set(-4, 2, -3);
 scene.add(rim);
 
+let mats = {};
+let root = null;
+let partGroups = {};
+let activePart = 'all';
+
 function makeMaterial(cfg) {
   return new THREE.MeshStandardMaterial({
     color: new THREE.Color(...cfg.base_color),
@@ -84,13 +95,6 @@ function makeMaterial(cfg) {
     emissiveIntensity: cfg.emission_strength ?? 0,
   });
 }
-const mats = {};
-for (const [name, cfg] of Object.entries(spec.materials)) mats[name] = makeMaterial(cfg);
-
-const root = new THREE.Group();
-scene.add(root);
-const partGroups = {};
-const partCenters = {};
 
 function addPrim(group, p) {
   let geo;
@@ -98,8 +102,7 @@ function addPrim(group, p) {
     geo = new THREE.BoxGeometry(...p.scale);
   } else if (p.type === 'uv_sphere') {
     geo = new THREE.SphereGeometry(1, 24, 16);
-    const s = p.scale || [p.radius, p.radius, p.radius];
-    geo.scale(...s);
+    geo.scale(...(p.scale || [p.radius, p.radius, p.radius]));
   } else if (p.type === 'cylinder') {
     geo = new THREE.CylinderGeometry(p.radius, p.radius, p.depth, p.vertices || 32);
     const r = p.rot || [0, 0, 0];
@@ -107,80 +110,86 @@ function addPrim(group, p) {
     geo.rotateY(THREE.MathUtils.degToRad(r[1]));
     geo.rotateZ(THREE.MathUtils.degToRad(r[2]));
   }
-  const mesh = new THREE.Mesh(geo, mats[p.material] || mats[Object.keys(mats)[0]]);
+  const mesh = new THREE.Mesh(geo, mats[p.material] || Object.values(mats)[0]);
   mesh.position.set(...p.loc);
-  if (p.bevel) {
-    mesh.geometry = geo; // Bevel in three.js approximiert; Kanten bleiben scharf
-  }
   group.add(mesh);
 }
 
-for (const part of spec.parts) {
-  const g = new THREE.Group();
-  g.name = part.id;
-  let center = part.bounding_box ? part.bounding_box.center : null;
-  if (!center) {
-    center = [0, 0, 0];
-    for (const p of part.primitives) for (let i = 0; i < 3; i++) center[i] += p.loc[i] / part.primitives.length;
+async function loadModel(name) {
+  const spec = (await (await fetch(MODELS[name])).json()).build_spec;
+  mats = {};
+  for (const [n, cfg] of Object.entries(spec.materials)) mats[n] = makeMaterial(cfg);
+  if (root) scene.remove(root);
+  root = new THREE.Group();
+  scene.add(root);
+  partGroups = {};
+  for (const part of spec.parts) {
+    const g = new THREE.Group();
+    g.name = part.id;
+    let center = part.bounding_box ? part.bounding_box.center : null;
+    if (!center) {
+      center = [0, 0, 0];
+      for (const p of part.primitives) for (let i = 0; i < 3; i++) center[i] += p.loc[i] / part.primitives.length;
+    }
+    g.position.set(...center);
+    for (const p of part.primitives) {
+      addPrim(g, { ...p, loc: p.loc.map((v, i) => v - center[i]) });
+    }
+    g.userData.center = new THREE.Vector3(...center);
+    root.add(g);
+    partGroups[part.id] = g;
   }
-  g.position.set(...center);
-  for (const p of part.primitives) {
-    const local = p.loc.map((v, i) => v - center[i]);
-    addPrim(g, { ...p, loc: local });
+  const partsDiv = document.getElementById('parts');
+  partsDiv.innerHTML = '';
+  for (const part of spec.parts) {
+    const b = document.createElement('button');
+    b.className = 'part';
+    b.dataset.p = part.id;
+    b.textContent = part.id;
+    b.onclick = () => setPart(part.id);
+    partsDiv.appendChild(b);
   }
-  g.userData.center = new THREE.Vector3(...center);
-  root.add(g);
-  partGroups[part.id] = g;
-  partCenters[part.id] = center;
+  setPart('all');
+  applyExplode();
 }
 
-const partsDiv = document.getElementById('parts');
-let activePart = 'all';
-for (const part of spec.parts) {
-  const b = document.createElement('button');
-  b.className = 'part';
-  b.dataset.p = part.id;
-  b.textContent = part.id;
-  b.onclick = () => setPart(part.id);
-  partsDiv.appendChild(b);
-}
 function setPart(id) {
   activePart = id;
   document.querySelectorAll('.part').forEach(b => b.classList.toggle('active', b.dataset.p === id));
-  for (const [pid, g] of Object.entries(partGroups)) {
-    g.visible = (id === 'all' || id === pid);
-  }
+  for (const [pid, g] of Object.entries(partGroups)) g.visible = (id === 'all' || id === pid);
 }
 
 const explodeSlider = document.getElementById('explode');
-const expVal = document.getElementById('expVal');
 function applyExplode() {
   const t = explodeSlider.value / 100;
-  expVal.textContent = explodeSlider.value;
+  document.getElementById('expVal').textContent = explodeSlider.value;
   for (const g of Object.values(partGroups)) {
     const c = g.userData.center;
     const dir = new THREE.Vector3(c[0], c[1] - 0.95, c[2]);
     if (dir.lengthSq() < 1e-6) dir.set(0, 1, 0);
     dir.normalize();
-    g.position.copy(dir.multiplyScalar(t * 0.55));
+    g.position.copy(new THREE.Vector3(...c).add(dir.multiplyScalar(t * 0.55)));
   }
 }
 explodeSlider.oninput = applyExplode;
 
 const views = {
-  iso:  [2.2, 1.6, 2.6],
-  front: [0, 1.0, 3.2],
-  back: [0, 1.0, -3.2],
-  side: [3.2, 1.0, 0],
-  top:  [0, 4.5, 0.01],
+  iso: [2.2, 1.6, 2.6], front: [0, 1.0, 3.2], back: [0, 1.0, -3.2],
+  side: [3.2, 1.0, 0], top: [0, 4.5, 0.01],
 };
 document.querySelectorAll('#views button').forEach(b => {
   b.onclick = () => {
     document.querySelectorAll('#views button').forEach(x => x.classList.remove('active'));
     b.classList.add('active');
-    const v = views[b.dataset.v];
-    camera.position.set(...v);
+    camera.position.set(...views[b.dataset.v]);
     controls.target.set(0, 0.95, 0);
+  };
+});
+document.querySelectorAll('#models button').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('#models button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    loadModel(b.dataset.m);
   };
 });
 
@@ -189,6 +198,7 @@ addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(container.clientWidth, container.clientHeight);
 });
+loadModel('bulkybot');
 renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
 </script>
 </body>

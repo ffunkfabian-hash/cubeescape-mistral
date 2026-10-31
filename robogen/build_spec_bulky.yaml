@@ -1,0 +1,91 @@
+build_spec:
+  meta:
+    name: bulkybot
+    source_views: [front, back, side_left, side_right]
+    unit: meters
+    origin: "ground plane at z=0, x/y centered on body axis"
+    forward: "+Y"
+    up: "+Z"
+    right: "+X"
+    total_height: 1.80
+  proportions:
+    head_height: 0.30
+    shoulder_width: 0.60
+    torso_width: 0.45
+    torso_depth: 0.30
+    arm_length: 0.72
+    leg_length: 1.08
+    foot_length: 0.18
+    foot_width: 0.225
+  parts:
+    - id: torso
+      bounding_box: {size: [0.45, 0.30, 0.55], center: [0, 0, 1.22]}
+      primitives:
+        - {type: cube, scale: [0.45, 0.30, 0.55], loc: [0, 0, 1.22], bevel: 0.04}
+        - {type: cube, scale: [0.32, 0.02, 0.28], loc: [0, -0.155, 1.30], bevel: 0.02, material: light_gray}   # Brustplatte
+        - {type: cube, scale: [0.24, 0.02, 0.16], loc: [0, -0.155, 1.05], bevel: 0.02, material: dark_gray}    # Bauchplatte
+        - {type: cube, scale: [0.12, 0.20, 0.14], loc: [-0.24, 0, 0.98], bevel: 0.03, material: dark_gray}     # Hüftblock L
+        - {type: cube, scale: [0.12, 0.20, 0.14], loc: [0.24, 0, 0.98], bevel: 0.03, material: dark_gray}      # Hüftblock R
+      material: shell
+    - id: backpack_shield
+      parent: torso
+      bounding_box: {size: [0.50, 0.08, 0.55], center: [0, 0.19, 1.25]}
+      primitives:
+        - {type: cube, scale: [0.50, 0.08, 0.55], loc: [0, 0.19, 1.25], bevel: 0.03, material: dark_gray}
+      material: dark_gray
+    - id: head
+      parent: torso
+      bounding_box: {size: [0.26, 0.26, 0.30], center: [0, 0, 1.65]}
+      primitives:
+        - {type: cube, scale: [0.26, 0.26, 0.30], loc: [0, 0, 1.65], bevel: 0.05}
+        - {type: cube, scale: [0.18, 0.02, 0.07], loc: [0, -0.135, 1.68], bevel: 0.01, material: visor_blue}   # rechteckiges Visier
+        - {type: cube, scale: [0.20, 0.02, 0.08], loc: [0, -0.135, 1.53], bevel: 0.02, material: dark_gray}    # Kinn
+      material: shell
+    - id: pauldron_L
+      parent: torso
+      primitives:
+        - {type: cube, scale: [0.18, 0.16, 0.22], loc: [-0.315, 0, 1.45], bevel: 0.04}
+      material: shell
+    - id: pauldron_R
+      parent: torso
+      primitives:
+        - {type: cube, scale: [0.18, 0.16, 0.22], loc: [0.315, 0, 1.45], bevel: 0.04}
+      material: shell
+    - id: arm_L
+      parent: torso
+      primitives:
+        - {type: cylinder, radius: 0.09, depth: 0.34, vertices: 12, loc: [-0.30, 0, 1.22], rot: [0, 0, 0]}
+        - {type: cylinder, radius: 0.08, depth: 0.34, vertices: 12, loc: [-0.30, 0, 0.88], rot: [0, 0, 0]}
+        - {type: cube, scale: [0.14, 0.12, 0.16], loc: [-0.30, 0, 0.68], bevel: 0.02, material: black}  # Hand
+      material: shell
+    - id: arm_R
+      parent: torso
+      primitives:
+        - {type: cylinder, radius: 0.09, depth: 0.34, vertices: 12, loc: [0.30, 0, 1.22], rot: [0, 0, 0]}
+        - {type: cylinder, radius: 0.08, depth: 0.34, vertices: 12, loc: [0.30, 0, 0.88], rot: [0, 0, 0]}
+        - {type: cube, scale: [0.14, 0.12, 0.16], loc: [0.30, 0, 0.68], bevel: 0.02, material: black}
+      material: shell
+    - id: leg_L
+      parent: torso
+      primitives:
+        - {type: cylinder, radius: 0.11, depth: 0.52, vertices: 12, loc: [-0.12, 0, 0.70]}
+        - {type: cylinder, radius: 0.09, depth: 0.50, vertices: 12, loc: [-0.12, 0, 0.25]}
+        - {type: cube, scale: [0.225, 0.18, 0.07], loc: [-0.12, -0.04, 0.035], bevel: 0.02, material: black}  # Fuß
+      material: shell
+    - id: leg_R
+      parent: torso
+      primitives:
+        - {type: cylinder, radius: 0.11, depth: 0.52, vertices: 12, loc: [0.12, 0, 0.70]}
+        - {type: cylinder, radius: 0.09, depth: 0.50, vertices: 12, loc: [0.12, 0, 0.25]}
+        - {type: cube, scale: [0.225, 0.18, 0.07], loc: [0.12, -0.04, 0.035], bevel: 0.02, material: black}
+      material: shell
+  materials:
+    shell:       {base_color: [0.82, 0.84, 0.87], roughness: 0.4, metallic: 0.15}
+    light_gray:  {base_color: [0.70, 0.72, 0.75], roughness: 0.45, metallic: 0.1}
+    dark_gray:   {base_color: [0.25, 0.26, 0.28], roughness: 0.5, metallic: 0.3}
+    black:       {base_color: [0.05, 0.05, 0.06], roughness: 0.6, metallic: 0.2}
+    visor_blue:  {base_color: [0.1, 0.5, 1.0], emission: [0.3, 0.7, 1.0], emission_strength: 5.0, roughness: 0.2}
+  build_order: [torso, backpack_shield, head, pauldron_L, pauldron_R, arm_L, arm_R, leg_L, leg_R]
+  verification:
+    render_views: {front: [90, 0, 0], back: [90, 0, 180], side: [90, 0, -90]}
+    target_iou: 0.8
