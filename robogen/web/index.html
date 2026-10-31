@@ -165,10 +165,10 @@ function applyExplode() {
   document.getElementById('expVal').textContent = explodeSlider.value;
   for (const g of Object.values(partGroups)) {
     const c = g.userData.center;
-    const dir = new THREE.Vector3(c[0], c[1] - 0.95, c[2]);
+    const dir = new THREE.Vector3(c.x, c.y - 0.95, c.z);
     if (dir.lengthSq() < 1e-6) dir.set(0, 1, 0);
     dir.normalize();
-    g.position.copy(new THREE.Vector3(...c).add(dir.multiplyScalar(t * 0.55)));
+    g.position.copy(c).add(dir.multiplyScalar(t * 0.55));
   }
 }
 explodeSlider.oninput = applyExplode;
@@ -198,7 +198,18 @@ addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(container.clientWidth, container.clientHeight);
 });
-loadModel('bulkybot');
+window.addEventListener('error', e => {
+  const d = document.createElement('div');
+  d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#a33;color:#fff;padding:8px;font:13px monospace;z-index:99';
+  d.textContent = 'Fehler: ' + e.message;
+  document.body.appendChild(d);
+});
+loadModel('bulkybot').catch(e => {
+  const d = document.createElement('div');
+  d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#a33;color:#fff;padding:8px;font:13px monospace;z-index:99';
+  d.textContent = 'Modell laden fehlgeschlagen: ' + e.message;
+  document.body.appendChild(d);
+});
 renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
 </script>
 </body>
