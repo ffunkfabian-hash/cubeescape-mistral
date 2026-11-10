@@ -12,6 +12,7 @@ Silhouetten per IoU mit den Referenzbildern (Ziel: > 0,8).
 | `build_spec.yaml` | Spezifikation „hexbot": Proportionen (als Bruchteile der Gesamthöhe), Teile-Hierarchie, Primitive mit Maßen, Materialien |
 | `generate.py` | Baut das Modell in Blender: `blender -b -P generate.py -- build_spec.yaml` |
 | `verify.py` | Rendert Front/Rück/Seite als Ortho-Silhouetten und gibt IoU gegen Referenzen aus |
+| `prompts/destiny_titan_prompts.md` | Layer-für-Layer Prompt-Sammlung zum Modellieren eines Destiny-2-ähnlichen Titanen |
 
 ## Ablauf
 
